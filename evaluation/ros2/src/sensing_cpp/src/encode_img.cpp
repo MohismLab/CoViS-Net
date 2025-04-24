@@ -12,13 +12,6 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace swmc
-{
-extern "C"
-{
-#include "swmc/swmc_net.h"
-}
-}
 
 using std::placeholders::_1;
 
@@ -44,18 +37,14 @@ public:
         , img_proc_sub_{}
         , img_crop_size_{}
         , model_version_{}
-        , swmc_{nullptr}
         , msg_seq_{0}
+        , model_file{}
     {
         declare_parameter("image_inp_crop", 224);
         declare_parameter("model_enc_file", "");
-        declare_parameter("swmc_config_file", "");
 
-        std::string model_file;
-        std::string swmc_config_file;
         get_parameter("model_enc_file", model_file);
         get_parameter("image_inp_crop", img_crop_size_);
-        get_parameter("swmc_config_file", swmc_config_file);
 
         auto pkg_path = std::filesystem::path(ament_index_cpp::get_package_share_directory("sensing_cpp"));
         auto model_path = pkg_path / model_file;
@@ -67,7 +56,16 @@ public:
 
         model_enc_ = torch::jit::load(model_path);
         model_enc_.eval();
-        model_enc_.to(torch::kCUDA);
+        if (model_file.find("cpu") != std::string::npos)
+        {
+            model_enc_.to(torch::kCPU);
+            // RCLCPP_INFO(get_logger(), "enc model loaded on CPU");
+        }
+        else
+        {
+            model_enc_.to(torch::kCUDA);
+            // RCLCPP_INFO(get_logger(), "enc model loaded on GPU");
+        }
 
         img_proc_sub_ =
             image_transport::create_subscription(
@@ -78,32 +76,18 @@ public:
                 rmw_qos_profile_sensor_data
             );
 
-        if (!swmc_config_file.empty())
-        {
-            auto swmc_config_path = pkg_path / swmc_config_file;
-            swmc_ = swmc::run(swmc_config_path.c_str());
 
-            //swmc::init_log();
-        }
-        else
-        {
-            enc_publisher_ =
-                create_publisher<sensing_msgs::msg::EncodedImage>(
-                    "enc",
-                    rclcpp::SensorDataQoS()
+        enc_publisher_ =
+            create_publisher<sensing_msgs::msg::EncodedImage>(
+                "enc",
+                rclcpp::SensorDataQoS()
                 );
-        }
 
         RCLCPP_INFO(get_logger(), "Initialized");
     }
 
     ~EncodeImg()
     {
-        if (swmc_)
-        {
-            swmc::stop(swmc_);
-        }
-
         RCLCPP_INFO(get_logger(), "Destroyed");
     }
 
@@ -111,43 +95,43 @@ private:
     image_transport::Subscriber img_proc_sub_;
 
     rclcpp::Publisher<sensing_msgs::msg::EncodedImage>::SharedPtr enc_publisher_;
-    void* swmc_;
 
     torch::jit::Module model_enc_;
     int img_crop_size_;
     char msg_seq_;
     std::string model_version_;
+    std::string model_file;
 
     void img_callback(const sensor_msgs::msg::Image::ConstSharedPtr& msg)
     {
         float dt_rx = (get_clock()->now() - msg->header.stamp).nanoseconds() / 1e9;
-
+    
         auto img_proc = img_to_tensor(*msg);
-        auto inp_cuda = img_proc.permute({2, 0, 1}).to(torch::kFloat16).to(torch::kCUDA);
-
-        auto img_crop = crop_center_square_tensor(inp_cuda, img_crop_size_);
-
+        torch::Tensor inp_tensor;
+    
+        // Check if the model is on CPU or GPU
+        if (model_file.find("cpu") != std::string::npos) {
+            // RCLCPP_INFO(get_logger(), "inp_tensor is on CPU");
+            inp_tensor = img_proc.permute({2, 0, 1}).to(torch::kFloat32).to(torch::kCPU);
+        } else {
+            // RCLCPP_INFO(get_logger(), "inp_tensor is on GPU");
+            inp_tensor = img_proc.permute({2, 0, 1}).to(torch::kFloat16).to(torch::kCUDA);
+        }
+    
+        auto img_crop = crop_center_square_tensor(inp_tensor, img_crop_size_);
+    
         auto out = model_enc_.forward({img_crop.unsqueeze(0) / 255.0});
         auto out_cpu = out.toTensor().squeeze(0).to(torch::kFloat16).to(torch::kCPU);
         sensing_msgs::msg::EncodedImage enc = tensor_to_msg(out_cpu);
         enc.img_stamp = msg->header.stamp;
         enc.stamp = get_clock()->now();
         enc.model_version = model_version_;
-
+    
         float dt_proc = (get_clock()->now() - msg->header.stamp).nanoseconds() / 1e9;
-
-        if (swmc_)
-        {
-            auto swmc_msg = msg_to_swmc(enc);
-            swmc::send(swmc_, 2, swmc_msg.data(), swmc_msg.size());
-            RCLCPP_INFO(get_logger(), "Processed img rx %f proc %f via swmc", dt_rx, dt_proc);
-        }
-        else
-        {
-            enc_publisher_->publish(std::move(enc));
-            RCLCPP_INFO(get_logger(), "Processed img rx %f proc %f via ros2", dt_rx, dt_proc);
-        }
-
+        
+        enc_publisher_->publish(std::move(enc));
+        RCLCPP_INFO(get_logger(), "Processed img rx %f proc %f via ros2", dt_rx, dt_proc);
+    
         msg_seq_++;
     }
 
@@ -170,42 +154,6 @@ private:
         return enc;
     }
 
-    std::vector<unsigned char> msg_to_swmc(sensing_msgs::msg::EncodedImage& msg)
-    {
-        auto ns = std::string(get_namespace());
-        size_t data_size = sizeof(size_t) + ns.size()
-                           + sizeof(msg_seq_) // seq
-                           + sizeof(size_t) + msg.model_version.size() // Model version, strlen
-                           + sizeof(size_t) + msg.dtype.size() // dtype, strlen
-                           + sizeof(msg.stamp.sec) // timestamp
-                           + sizeof(msg.stamp.nanosec) // timestamp
-                           + sizeof(msg.img_stamp.sec) // img stamp
-                           + sizeof(msg.img_stamp.nanosec) // img stamp
-                           + sizeof(msg.patches) // enc patches
-                           + sizeof(msg.features) // enc features
-                           + sizeof(size_t) // payload size
-                           + msg.data.size(); // payload
-        std::vector<unsigned char> swmc_data;
-        swmc_data.reserve(data_size);
-
-        serialize(swmc_data, ns.length());
-        swmc_data.insert(swmc_data.end(), ns.begin(), ns.end());
-        serialize(swmc_data, msg_seq_);
-        serialize(swmc_data, msg.model_version.length());
-        swmc_data.insert(swmc_data.end(), msg.model_version.begin(), msg.model_version.end());
-        serialize(swmc_data, msg.dtype.length());
-        swmc_data.insert(swmc_data.end(), msg.dtype.begin(), msg.dtype.end());
-        serialize(swmc_data, msg.stamp.sec);
-        serialize(swmc_data, msg.stamp.nanosec);
-        serialize(swmc_data, msg.img_stamp.sec);
-        serialize(swmc_data, msg.img_stamp.nanosec);
-        serialize(swmc_data, msg.patches);
-        serialize(swmc_data, msg.features);
-        serialize(swmc_data, msg.data.size());
-        swmc_data.insert(swmc_data.end(), msg.data.begin(), msg.data.end());
-        return swmc_data;
-    }
-
     torch::Tensor crop_center_square_tensor(const torch::Tensor& in, int size)
     {
         int height = in.size(1);
@@ -220,6 +168,10 @@ private:
         int byte_depth = sensor_msgs::image_encodings::bitDepth(source.encoding) / 8;
         int num_channels = sensor_msgs::image_encodings::numChannels(source.encoding);
 
+        if (num_channels > 3) {
+            // RCLCPP_WARN(get_logger(), "Input image has %d channels. Using only the first 3 channels.", num_channels);
+            num_channels = 3; // Use only the first 3 channels (RGB)
+        }
         if (source.step < source.width * byte_depth * num_channels)
         {
             std::stringstream ss;

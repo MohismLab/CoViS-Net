@@ -21,19 +21,26 @@ include_directories("${TORCH_INCLUDE_DIRS}")
 # Torch TensorRT
 include_directories("/usr/local/lib/python3.8/dist-packages/torch_tensorrt/include")
 link_directories("/usr/local/lib/python3.8/dist-packages/torch_tensorrt/lib")
+link_directories(/usr/local/lib)
+link_directories(/opt/libtorchtrt/lib)
+link_directories(/opt/tensorrt/lib)
+
+
 set(Torch_TensorRT_LIBS -Wl,--no-as-needed -ltorchtrt -Wl,--as-needed)
 
 set(CMAKE_CXX_STANDARD 14)
 
 include_directories("./include")
+include_directories(/usr/local/include)
+include_directories(/opt/libtorchtrt/include)
 
 add_executable(encode_img src/encode_img.cpp)
 target_link_directories(encode_img PRIVATE lib)
-target_link_libraries(encode_img ${TORCH_LIBRARIES} ${Torch_TensorRT_LIBS} swmc_net)
+target_link_libraries(encode_img ${TORCH_LIBRARIES} ${Torch_TensorRT_LIBS})
 
 add_executable(predict_pose src/predict_pose.cpp)
 target_link_directories(predict_pose PRIVATE lib)
-target_link_libraries(predict_pose ${TORCH_LIBRARIES} ${Torch_TensorRT_LIBS} swmc_net)
+target_link_libraries(predict_pose ${TORCH_LIBRARIES} ${Torch_TensorRT_LIBS})
 
 ament_target_dependencies(encode_img rclcpp std_msgs sensor_msgs image_transport cv_bridge OpenCV sensing_msgs Torch)
 install(TARGETS encode_img DESTINATION lib/${PROJECT_NAME})

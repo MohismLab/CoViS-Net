@@ -11,6 +11,7 @@ from PIL import Image, ImageEnhance
 
 
 def make_simple_cfg(settings):
+    # print("[DEBUG] Creating simulator configuration with settings:", settings)
     sim_cfg = habitat_sim.SimulatorConfiguration()
     sim_cfg.scene_id = settings["scene"]
 
@@ -18,6 +19,7 @@ def make_simple_cfg(settings):
     agent_cfg.sensor_specifications = []
 
     if settings["color_sensor"]:
+        # print("[DEBUG] Adding color sensor to agent configuration")
         color_sensor_spec = habitat_sim.CameraSensorSpec()
         color_sensor_spec.uuid = "color_sensor"
         color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
@@ -29,6 +31,7 @@ def make_simple_cfg(settings):
         agent_cfg.sensor_specifications.append(color_sensor_spec)
 
     if settings["depth_sensor"]:
+        # print("[DEBUG] Adding depth sensor to agent configuration")
         depth_sensor_spec = habitat_sim.CameraSensorSpec()
         depth_sensor_spec.uuid = "depth_sensor"
         depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
@@ -45,9 +48,11 @@ def make_simple_cfg(settings):
 def sample_random_points(
     sim, max_samples=float("inf"), volume_sample_fac=1.0, significance_threshold=0.2
 ):
+    # print("[DEBUG] Sampling random points in the scene")
     scene_bb = sim.get_active_scene_graph().get_root_node().cumulative_bb
     scene_volume = scene_bb.size().product()
     n_samples = min(int(scene_volume * volume_sample_fac), max_samples)
+    # print(f"[DEBUG] Number of samples to generate: {n_samples}")
     points = np.array(
         [sim.pathfinder.get_random_navigable_point() for _ in range(n_samples)]
     )
@@ -61,10 +66,12 @@ def sample_random_points(
         points_floor = points[(points[:, 1] >= l_edge) & (points[:, 1] <= r_edge)]
         height = points_floor[:, 1].mean()
         points_floors[height] = points_floor
+    # print(f"[DEBUG] Number of floors detected: {len(points_floors)}")
     return points_floors
 
 
 def get_obs_from_random_pose(sim, agent, cfg, pos, yaw):
+    # print("[DEBUG] Generating observations from random pose")
     agent_state = agent.get_state()
     pos_offset = np.random.uniform(low=cfg["pos_range"][0], high=cfg["pos_range"][1])
     rot = np.random.uniform(
@@ -79,6 +86,7 @@ def get_obs_from_random_pose(sim, agent, cfg, pos, yaw):
 
 
 def create_meta_and_save(sim, agent, sim_cfg, obs, topdown_idx, img_idx, out_path):
+    # print(f"[DEBUG] Saving metadata and images for image index {img_idx}")
     if "depth_sensor" in obs:
         depth_image = Image.fromarray(100 * obs["depth_sensor"], mode="RGB")
         depth_image.save(out_path / "depth" / f"{img_idx:05d}.jpg")
@@ -114,6 +122,7 @@ def create_meta_and_save(sim, agent, sim_cfg, obs, topdown_idx, img_idx, out_pat
 
 
 def save_topdown(sim, height, meters_per_pixel, filename):
+    # print(f"[DEBUG] Saving topdown view at height {height} to {filename}")
     topdown = sim.pathfinder.get_topdown_view(
         meters_per_pixel=meters_per_pixel, height=height
     ).astype(np.uint8)
@@ -122,8 +131,10 @@ def save_topdown(sim, height, meters_per_pixel, filename):
 
 
 def generate(scene_idx, store_depth, hm3d_data_path, dataset_out_path):
+    # print(f"[DEBUG] Starting dataset generation for scene index {scene_idx}")
     tmp_path = Path("/tmp/covisnet_render")
-    for scene in hm3d_data_path.glob(f"{scene_idx:05d}-*/*.basis.glb"):
+    for scene in hm3d_data_path.glob(f"{scene_idx:05d}-*/*.glb"):
+        # print(f"[DEBUG] Processing scene: {scene}")
         shutil.rmtree(tmp_path, ignore_errors=True)
 
         (tmp_path / "rgb").mkdir(parents=True, exist_ok=True)

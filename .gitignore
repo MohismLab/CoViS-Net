@@ -7,3 +7,13 @@ checkpoints_covisnet
 wandb
 .idea
 
+models/0kc5po4ee18_float32_jit_cpu_bev.tsbh3c6unm.part
+evaluation/ros2/src/sensing_cpp/models/oyu1brtpe18_float16_trt_msg.tsts_q09_m.part
+models/0kc5po4e/epoch=18-step=452067.ckpt
+models/0kc5po4e/last.ckpt
+models (copy)/.gitignore
+models (copy)/0kc5po4ee18_float32_jit_cpu_bev.tsbh3c6unm.part
+models (copy)/download.sh
+models (copy)/epoch=18-step=452067.ckpt
+models (copy)/last.ckpt
+models (copy)/README.md

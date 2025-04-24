@@ -15,13 +15,6 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace swmc
-{
-extern "C"
-{
-#include "swmc/swmc_net.h"
-}
-}
 
 using std::placeholders::_1;
 
@@ -50,30 +43,25 @@ T deserialize(std::vector<unsigned char>& vec)
     return value;
 }
 
-static void static_swmc_callback(uint8_t* data, uint32_t length);
 
 class PredictPose : public rclcpp::Node
 {
 public:
     PredictPose()
         : Node("predict_pose")
-        , swmc_{nullptr}
     {
         declare_parameter("model_msg_file", "");
         declare_parameter("model_post_file", "");
         declare_parameter("cam_namespace_other", "");
         declare_parameter("pose_topic_name", "rel_pos");
-        declare_parameter("swmc_config_file", "");
 
         std::string model_msg_file;
         std::string model_post_file;
         std::string pose_topic_name;
-        std::string swmc_config_file;
         get_parameter("model_msg_file", model_msg_file);
         get_parameter("model_post_file", model_post_file);
         get_parameter("cam_namespace_other", cam_namespace_other_);
         get_parameter("pose_topic_name", pose_topic_name);
-        get_parameter("swmc_config_file", swmc_config_file);
 
         assert(!cam_namespace_other_.empty());
         assert(!(cam_namespace_other_.back() == '/'));
@@ -85,52 +73,50 @@ public:
         RCLCPP_INFO(get_logger(), "Loading msg model version %s from %s", model_version_.c_str(), model_msg_path.c_str());
         model_msg_ = torch::jit::load(model_msg_path);
         model_msg_.eval();
-        model_msg_.to(torch::kCUDA);
+        if (model_msg_file.find("cpu") != std::string::npos)
+        {
+            model_msg_.to(torch::kCPU);
+            // RCLCPP_INFO(get_logger(), "Msg model loaded on CPU");
+        }
+        else
+        {
+            model_msg_.to(torch::kCUDA);
+            // RCLCPP_INFO(get_logger(), "Msg model loaded on GPU");
+        }
+
 
         auto model_post_path = pkg_path / model_post_file;
         assert(model_version_ == model_version_from_path(model_post_path));
         RCLCPP_INFO(get_logger(), "Loading post model from %s", model_post_path.c_str());
         model_post_ = torch::jit::load(model_post_path);
         model_post_.eval();
-        model_post_.to(torch::kCUDA);
-
-        if (swmc_config_file.empty())
+        if (model_post_file.find("cpu") != std::string::npos)
         {
-            std::ostringstream cam_topic_other;
-            cam_topic_other << cam_namespace_other_ << "/enc";
-
-            enc_sub_self_ =
-                create_subscription<sensing_msgs::msg::EncodedImage>(
-                    "enc",
-                    rclcpp::SensorDataQoS(),
-                    std::bind(&PredictPose::enc_self_callback, this, _1)
-                );
-
-            enc_sub_other_ =
-                create_subscription<sensing_msgs::msg::EncodedImage>(
-                    cam_topic_other.str(),
-                    rclcpp::SensorDataQoS(),
-                    std::bind(&PredictPose::enc_other_callback, this, _1)
-                );
+            model_post_.to(torch::kCPU);
+            // RCLCPP_INFO(get_logger(), "Post model loaded on CPU");
         }
         else
         {
-            auto swmc_config_path = pkg_path / swmc_config_file;
-            swmc_ = swmc::run(swmc_config_path.c_str());
-
-            //swmc::init_log();
-            swmc::register_receive_callback(swmc_, static_swmc_callback);
-
-            /*
-            timer_swmc_ =
-                rclcpp::create_timer(
-                    this,
-                    get_clock(),
-                    rclcpp::Duration(0, (int) (1.f / 30.f) * 1e9),
-                    std::bind(&PredictPose::timer_swmc_callback, this)
-                );
-            */
+            model_post_.to(torch::kCUDA);
+            // RCLCPP_INFO(get_logger(), "Post model loaded on GPU");
         }
+
+        std::ostringstream cam_topic_other;
+        cam_topic_other << cam_namespace_other_ << "/enc";
+
+        enc_sub_self_ =
+            create_subscription<sensing_msgs::msg::EncodedImage>(
+                "enc",
+                rclcpp::SensorDataQoS(),
+                std::bind(&PredictPose::enc_self_callback, this, _1)
+            );
+
+        enc_sub_other_ =
+            create_subscription<sensing_msgs::msg::EncodedImage>(
+                cam_topic_other.str(),
+                rclcpp::SensorDataQoS(),
+                std::bind(&PredictPose::enc_other_callback, this, _1)
+            );
 
         pose_publisher_ =
             create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -145,36 +131,7 @@ public:
 
     ~PredictPose()
     {
-        if (swmc_)
-        {
-            swmc::stop(swmc_);
-        }
-
         RCLCPP_INFO(get_logger(), "Destroyed");
-    }
-
-    void swmc_callback(uint8_t* data, uint32_t length)
-    {
-        auto buffer = std::vector<unsigned char>(data, data + length);
-
-        auto enc_msg = std::make_shared<sensing_msgs::msg::EncodedImage>();
-        auto namespace_sender = swmc_to_msg(buffer, enc_msg);
-        auto const_enc_msg = std::const_pointer_cast<const sensing_msgs::msg::EncodedImage>(enc_msg);
-
-        if (namespace_sender == std::string(get_namespace()))
-        {
-            enc_self_callback(const_enc_msg);
-        }
-        else if (namespace_sender == cam_namespace_other_)
-        {
-            enc_other_callback(const_enc_msg);
-        }
-        else
-        {
-            RCLCPP_DEBUG(get_logger(), "Received message from unspecified namespace %s", namespace_sender.c_str());
-        }
-
-        swmc::dealloc_buffer(data, length);
     }
 
 private:
@@ -182,8 +139,6 @@ private:
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     rclcpp::Subscription<sensing_msgs::msg::EncodedImage>::SharedPtr enc_sub_self_;
     rclcpp::Subscription<sensing_msgs::msg::EncodedImage>::SharedPtr enc_sub_other_;
-    rclcpp::TimerBase::SharedPtr timer_swmc_;
-    void* swmc_;
 
     torch::jit::Module model_msg_;
     torch::jit::Module model_post_;
@@ -199,38 +154,6 @@ private:
         return model_stem.substr(0, pos);
     }
 
-    void timer_swmc_callback(void)
-    {
-        auto own_namespace = std::string(get_namespace());
-
-        auto waiting_messages = swmc::receive_waiting_message_count(swmc_);
-
-        for (unsigned int i = 0; i < waiting_messages; i++)
-        {
-            std::vector<unsigned char> buffer;
-            buffer.resize(65536);
-            unsigned int rx_bytes = swmc::receive(swmc_, buffer.data(), 65536);
-            buffer.resize(rx_bytes);
-
-            auto enc_msg = std::make_shared<sensing_msgs::msg::EncodedImage>();
-            auto namespace_sender = swmc_to_msg(buffer, enc_msg);
-            auto const_enc_msg = std::const_pointer_cast<const sensing_msgs::msg::EncodedImage>(enc_msg);
-
-            if (namespace_sender == own_namespace)
-            {
-                enc_self_callback(const_enc_msg);
-            }
-            else if (namespace_sender == cam_namespace_other_)
-            {
-                enc_other_callback(const_enc_msg);
-            }
-            else
-            {
-                RCLCPP_DEBUG(get_logger(), "Received message from unspecified namespace %s", namespace_sender.c_str());
-            }
-        }
-    }
-
     void enc_self_callback(const sensing_msgs::msg::EncodedImage::ConstSharedPtr& enc)
     {
         if (other_enc_.numel() == 0)
@@ -242,7 +165,9 @@ private:
         float dt_rx = (get_clock()->now() - enc->img_stamp).nanoseconds() / 1e9;
         torch::Tensor self_enc = msg_to_tensor(enc);
 
-        auto out = model_msg_.forward({self_enc.to(torch::kCUDA), other_enc_});
+        // TODO, check if self_enc is on CPU or GPU
+        // auto out = model_msg_.forward({self_enc.to(torch::kCUDA), other_enc_});
+        auto out = model_msg_.forward({self_enc.to(torch::kCPU), other_enc_});
         auto pred = model_post_.forward({out.toTensor()}).toTuple()->elements();
         auto pos = pred[0].toTensor().squeeze(0).to(torch::kCPU);
         auto pos_var = pred[1].toTensor().squeeze(0).to(torch::kCPU);
@@ -293,44 +218,16 @@ private:
         float dt_rx = (get_clock()->now() - enc->img_stamp).nanoseconds() / 1e9;
 
         torch::Tensor t = msg_to_tensor(enc);
-        other_enc_ = t.to(torch::kCUDA);
+        // TODO, check if other_enc_ is on CPU or GPU
+        // other_enc_ = t.to(torch::kCUDA);
+        other_enc_ = t.to(torch::kCPU);
 
         float dt_proc = (get_clock()->now() - enc->img_stamp).nanoseconds() / 1e9;
 
         RCLCPP_INFO(get_logger(), "Received other dt rx %f proc %f", dt_rx, dt_proc);
     }
 
-    std::string swmc_to_msg(std::vector<unsigned char> swmc_data, sensing_msgs::msg::EncodedImage::SharedPtr& enc_msg)
-    {
-        size_t ns_length = deserialize<size_t>(swmc_data);
-        auto ns_sender = std::string(swmc_data.begin(), swmc_data.begin() + ns_length);
-        swmc_data.erase(swmc_data.begin(), swmc_data.begin() + ns_length);
 
-        char seq = deserialize<char>(swmc_data);
-
-        size_t model_version_length = deserialize<size_t>(swmc_data);
-        enc_msg->model_version = std::string(swmc_data.begin(), swmc_data.begin() + model_version_length);
-        swmc_data.erase(swmc_data.begin(), swmc_data.begin() + model_version_length);
-
-        size_t dtype_length = deserialize<size_t>(swmc_data);
-        enc_msg->dtype = std::string(swmc_data.begin(), swmc_data.begin() + dtype_length);
-        swmc_data.erase(swmc_data.begin(), swmc_data.begin() + dtype_length);
-
-        enc_msg->stamp.sec = deserialize<int32_t>(swmc_data);
-        enc_msg->stamp.nanosec = deserialize<uint32_t>(swmc_data);
-        enc_msg->img_stamp.sec = deserialize<int32_t>(swmc_data);
-        enc_msg->img_stamp.nanosec = deserialize<uint32_t>(swmc_data);
-
-        enc_msg->patches = deserialize<uint16_t>(swmc_data);
-        enc_msg->features = deserialize<uint16_t>(swmc_data);
-
-        size_t data_len = deserialize<size_t>(swmc_data);
-        enc_msg->data = std::vector<unsigned char>(swmc_data.begin(), swmc_data.begin() + data_len);
-
-        RCLCPP_INFO(get_logger(), "Received seq %d from %s data len %d", seq, ns_sender.c_str(), static_cast<int>(data_len));
-
-        return ns_sender;
-    }
 
     torch::Tensor msg_to_tensor(const sensing_msgs::msg::EncodedImage::ConstSharedPtr& msg)
     {
@@ -344,13 +241,7 @@ private:
 };
 
 static std::shared_ptr<PredictPose> pose_node = nullptr;
-static void static_swmc_callback(uint8_t* data, uint32_t length)
-{
-    if (pose_node)
-    {
-        pose_node->swmc_callback(data, length);
-    }
-}
+
 
 int main(int argc, char* argv[])
 {

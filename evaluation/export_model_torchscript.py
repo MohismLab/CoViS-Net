@@ -249,7 +249,9 @@ resolution = 224
 model = LoadedModel(
     gnn_in_channels, gnn_out_channels, gnn_in_seq_len
 ).eval()  # .to(dev)
-model.load_state_dict(torch.load(model_in_file)["state_dict"])
+# model.load_state_dict(torch.load(model_in_file)["state_dict"])
+model.load_state_dict(torch.load(model_in_file, weights_only=False)["state_dict"])
+
 model_inp = {
     "img_norm": torch.rand(10, 5, 3, resolution, resolution),
     "pos": torch.rand(10, 5, 3),

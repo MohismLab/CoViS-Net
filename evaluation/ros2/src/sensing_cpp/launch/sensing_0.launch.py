@@ -5,7 +5,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     # base_hostname = socket.gethostname().replace("-", "_")
-    base_hostname = "robomaster_1"
+    base_hostname = "robomaster_0"
     own_base_ns = "/" + base_hostname
     lead = "robomaster" # "robomaster" or "unitree"
     if lead == "robomaster":
@@ -53,28 +53,28 @@ def generate_launch_description():
             "robomaster_", "r"
         ).replace("camera_", "c")
 
-        nodes.append(
-            Node(
-                package="sensing_cpp",
-                executable="predict_pose",
-                namespace=own_cam_ns,
-                name="predict_pose",
-                parameters=[
-                    {
-                        # "model_msg_file": "models/oyu1brtpe18_float16_trt_msg.ts", # 128
-                        # "model_post_file": "models/oyu1brtpe18_float32_jit_post.ts", # 128
+        # nodes.append(
+        #     Node(
+        #         package="sensing_cpp",
+        #         executable="predict_pose",
+        #         namespace=own_cam_ns,
+        #         name="predict_pose",
+        #         parameters=[
+        #             {
+        #                 # "model_msg_file": "models/oyu1brtpe18_float16_trt_msg.ts", # 128
+        #                 # "model_post_file": "models/oyu1brtpe18_float32_jit_post.ts", # 128
 
-                        "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
-                        "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
+        #                 "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
+        #                 "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
 
-                        #"model_msg_file": "models/0kc5po4ee18_float16_trt_msg.ts",  # 128, 6D
-                        #"model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
-                        "cam_namespace_other": other_cam_ns,
-                        "pose_topic_name": pose_topic,
-                        "swmc_config_file": swmc_config,
-                    }
-                ],
-            )
-        )
+        #                 #"model_msg_file": "models/0kc5po4ee18_float16_trt_msg.ts",  # 128, 6D
+        #                 #"model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
+        #                 "cam_namespace_other": other_cam_ns,
+        #                 "pose_topic_name": pose_topic,
+        #                 "swmc_config_file": swmc_config,
+        #             }
+        #         ],
+        #     )
+        # )
 
     return LaunchDescription(nodes)

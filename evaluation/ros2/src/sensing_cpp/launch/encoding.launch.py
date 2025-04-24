@@ -19,6 +19,9 @@ def generate_launch_description():
                         "image_inp_crop": 224,
                     }
                 ],
+                remappings=[
+                    ("/robomaster_1/camera_0/image_proc", "/agent0/camera/image_color"),
+                ],
             ),
         ]
     )
