@@ -390,5 +390,5 @@ def convert(dtype=torch.float):
     )
 
 
-# convert(torch.float)
-convert(torch.half)
+convert(torch.float)
+# convert(torch.half)

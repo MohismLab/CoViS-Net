@@ -40,7 +40,8 @@ def generate_launch_description():
             parameters=[
                 {
                     # "model_enc_file": "models/oyu1brtpe18_float16_trt_enc.ts", # seq 128
-                    "model_enc_file": "models/0kc5po4ee18_float32_jit_cpu_enc.ts",
+                    # "model_enc_file": "models/0kc5po4ee18_float32_jit_cpu_enc.ts",
+                    "model_enc_file": "models/0kc5po4ee18_float32_jit_cuda_enc.ts",  # 
                     #"model_enc_file": "models/0kc5po4ee18_float16_trt_enc.ts", # seq 128, 6D
                     "image_inp_crop": 224,
                     "swmc_config_file": swmc_config,
@@ -64,8 +65,11 @@ def generate_launch_description():
                         # "model_msg_file": "models/oyu1brtpe18_float16_trt_msg.ts", # 128
                         # "model_post_file": "models/oyu1brtpe18_float32_jit_post.ts", # 128
 
-                        "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
-                        "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
+                        # "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
+                        # "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
+                        
+                        "model_msg_file": "models/0kc5po4ee18_float32_jit_cuda_msg.ts",  # 128
+                        "model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
 
                         #"model_msg_file": "models/0kc5po4ee18_float16_trt_msg.ts",  # 128, 6D
                         #"model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
