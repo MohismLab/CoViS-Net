@@ -104,6 +104,8 @@ private:
 
     void img_callback(const sensor_msgs::msg::Image::ConstSharedPtr& msg)
     {
+        // RCLCPP_INFO(get_logger(), "Line number: %d", __LINE__);
+
         float dt_rx = (get_clock()->now() - msg->header.stamp).nanoseconds() / 1e9;
     
         auto img_proc = img_to_tensor(*msg);
@@ -115,11 +117,11 @@ private:
             inp_tensor = img_proc.permute({2, 0, 1}).to(torch::kFloat32).to(torch::kCPU);
         } else {
             // RCLCPP_INFO(get_logger(), "inp_tensor is on GPU");
-            inp_tensor = img_proc.permute({2, 0, 1}).to(torch::kFloat16).to(torch::kCUDA);
+            inp_tensor = img_proc.permute({2, 0, 1}).to(torch::kFloat32).to(torch::kCUDA);
         }
-    
+
         auto img_crop = crop_center_square_tensor(inp_tensor, img_crop_size_);
-    
+        
         auto out = model_enc_.forward({img_crop.unsqueeze(0) / 255.0});
         auto out_cpu = out.toTensor().squeeze(0).to(torch::kFloat16).to(torch::kCPU);
         sensing_msgs::msg::EncodedImage enc = tensor_to_msg(out_cpu);
@@ -131,7 +133,7 @@ private:
         
         enc_publisher_->publish(std::move(enc));
         RCLCPP_INFO(get_logger(), "Processed img rx %f proc %f via ros2", dt_rx, dt_proc);
-    
+
         msg_seq_++;
     }
 
@@ -168,10 +170,10 @@ private:
         int byte_depth = sensor_msgs::image_encodings::bitDepth(source.encoding) / 8;
         int num_channels = sensor_msgs::image_encodings::numChannels(source.encoding);
 
-        if (num_channels > 3) {
-            // RCLCPP_WARN(get_logger(), "Input image has %d channels. Using only the first 3 channels.", num_channels);
-            num_channels = 3; // Use only the first 3 channels (RGB)
-        }
+        // if (num_channels > 3) {
+        //     // RCLCPP_WARN(get_logger(), "Input image has %d channels. Using only the first 3 channels.", num_channels);
+        //     num_channels = 3; // Use only the first 3 channels (RGB)
+        // }
         if (source.step < source.width * byte_depth * num_channels)
         {
             std::stringstream ss;
@@ -190,7 +192,13 @@ private:
         }
 
         auto options = torch::TensorOptions().dtype(torch::kUInt8); //.device(torch::kCUDA);
-        return torch::from_blob(const_cast<unsigned char*>(&source.data[0]), {source.height, source.width, num_channels}, options);
+        auto tensor = torch::from_blob(const_cast<unsigned char*>(&source.data[0]), {source.height, source.width, num_channels}, options);
+
+        if (num_channels == 4)
+        {
+            tensor = tensor.index({torch::indexing::Slice(), torch::indexing::Slice(), torch::indexing::Slice(0, 3)});
+        }
+        return tensor;
     }
 };
 

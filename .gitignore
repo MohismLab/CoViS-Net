@@ -17,3 +17,5 @@ models (copy)/download.sh
 models (copy)/epoch=18-step=452067.ckpt
 models (copy)/last.ckpt
 models (copy)/README.md
+test_img
+

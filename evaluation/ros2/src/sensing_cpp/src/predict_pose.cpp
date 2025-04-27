@@ -9,6 +9,7 @@
 #include <iostream>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <filesystem>
 #include <cassert>
 #include <algorithm>
@@ -166,8 +167,8 @@ private:
         torch::Tensor self_enc = msg_to_tensor(enc);
 
         // TODO, check if self_enc is on CPU or GPU
-        // auto out = model_msg_.forward({self_enc.to(torch::kCUDA), other_enc_});
-        auto out = model_msg_.forward({self_enc.to(torch::kCPU), other_enc_});
+        auto out = model_msg_.forward({self_enc.to(torch::kCUDA), other_enc_});
+        // auto out = model_msg_.forward({self_enc.to(torch::kCPU), other_enc_});
         auto pred = model_post_.forward({out.toTensor()}).toTuple()->elements();
         auto pos = pred[0].toTensor().squeeze(0).to(torch::kCPU);
         auto pos_var = pred[1].toTensor().squeeze(0).to(torch::kCPU);
@@ -179,10 +180,27 @@ private:
         msg.pose.pose.position.x = pos[0].item<double>();
         msg.pose.pose.position.y = pos[1].item<double>();
         msg.pose.pose.position.z = pos[2].item<double>();
+        // Convert quaternion to Euler angles (roll, pitch, yaw)
         msg.pose.pose.orientation.x = rot[0].item<double>();
         msg.pose.pose.orientation.y = rot[1].item<double>();
         msg.pose.pose.orientation.z = rot[2].item<double>();
         msg.pose.pose.orientation.w = rot[3].item<double>();
+
+        tf2::Quaternion q(
+            msg.pose.pose.orientation.x,
+            msg.pose.pose.orientation.y,
+            msg.pose.pose.orientation.z,
+            msg.pose.pose.orientation.w
+        );
+
+        double roll, pitch, yaw;
+        tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+        roll = roll * 180.0 / M_PI;
+        pitch = pitch * 180.0 / M_PI;
+        yaw = yaw * 180.0 / M_PI;
+
+        RCLCPP_INFO(get_logger(), "Orientation (roll, pitch, yaw) in degrees: %f, %f, %f", roll, pitch, yaw);
 
         auto cov = torch::diag(torch::cat({pos_var, rot_var.repeat(3)}, 0));
         auto cov_flat = cov.flatten().to(torch::kFloat64).contiguous();
@@ -219,8 +237,8 @@ private:
 
         torch::Tensor t = msg_to_tensor(enc);
         // TODO, check if other_enc_ is on CPU or GPU
-        // other_enc_ = t.to(torch::kCUDA);
-        other_enc_ = t.to(torch::kCPU);
+        other_enc_ = t.to(torch::kCUDA);
+        // other_enc_ = t.to(torch::kCPU);
 
         float dt_proc = (get_clock()->now() - enc->img_stamp).nanoseconds() / 1e9;
 

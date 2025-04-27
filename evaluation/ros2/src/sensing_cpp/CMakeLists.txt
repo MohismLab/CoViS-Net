@@ -13,6 +13,7 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(sensing_msgs REQUIRED)
 find_package(Torch REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 find_package(ament_cmake REQUIRED)
 
@@ -45,7 +46,7 @@ target_link_libraries(predict_pose ${TORCH_LIBRARIES} ${Torch_TensorRT_LIBS})
 ament_target_dependencies(encode_img rclcpp std_msgs sensor_msgs image_transport cv_bridge OpenCV sensing_msgs Torch)
 install(TARGETS encode_img DESTINATION lib/${PROJECT_NAME})
 
-ament_target_dependencies(predict_pose rclcpp std_msgs sensor_msgs geometry_msgs sensing_msgs tf2 tf2_ros Torch)
+ament_target_dependencies(predict_pose rclcpp std_msgs sensor_msgs geometry_msgs sensing_msgs tf2 tf2_ros Torch tf2_geometry_msgs)
 install(TARGETS predict_pose DESTINATION lib/${PROJECT_NAME})
 
 install(

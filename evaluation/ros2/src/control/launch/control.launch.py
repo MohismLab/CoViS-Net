@@ -4,7 +4,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    own_base_ns = "/" + socket.gethostname().replace("-", "_")
+    # own_base_ns = "/" + socket.gethostname().replace("-", "_")
+    own_base_ns = "/robomaster_1"  
     nodes = []
     lead = "robomaster" # "robomaster" or "unitree"
     if lead == "robomaster":

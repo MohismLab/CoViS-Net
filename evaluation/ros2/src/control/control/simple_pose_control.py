@@ -2,7 +2,9 @@ import rclpy
 import numpy as np
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
-from robomaster_msgs.msg import WheelSpeed
+# from robomaster_msgs.msg import WheelSpeed
+from sensing_msgs.msg import WheelSpeed
+
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R
 
@@ -17,7 +19,7 @@ class SimplePoseControl(Node):
         self.declare_parameter("ref_px", 0.5)
         self.declare_parameter("ref_py", 0.0)
         self.declare_parameter("ref_yaw", 0.0)
-        self.declare_parameter("pose_topic", "camera_0/pose_r0c0")
+        self.declare_parameter("pose_topic", "camera_0/pose_r0c0")   
 
         self.create_subscription(
             PoseWithCovarianceStamped,
@@ -52,7 +54,7 @@ class SimplePoseControl(Node):
             )
             / self.ROBOT_WHEEL_RADIUS
         )
-        print("Init")
+        self.get_logger().info("SimplePoseControl node initialized")
 
     def pub_vel(self, vx, vy, omega):
         vel = WheelSpeed()
@@ -108,10 +110,14 @@ class SimplePoseControl(Node):
             self.prev_e_yaw = e_yaw
 
         self.pub_vel(vx, vy, omega)
+        self.get_logger().info("publish vel")
 
     def pose_callback(self, pose):
         self.p = pose.pose.pose.position
         q = pose.pose.pose.orientation
+        self.get_logger().info(
+            f"pose: {self.p.x}, {self.p.y}, {self.p.z}, {q.x}, {q.y}, {q.z}, {q.w}"
+        )
         self.cov = pose.pose.covariance.reshape(6, 6)
         self.r = R.from_quat([q.x, q.y, q.z, q.w]).as_rotvec()
 

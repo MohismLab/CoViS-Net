@@ -20,35 +20,53 @@ def load_img(path):
             transforms.ConvertImageDtype(torch.float),
         ]
     )
-    img = Image.open(path)
-    return transform(img)
+    # img = Image.open(path)
+    img = Image.open(path).convert("RGB")  # Ensure the image has 3 channels (RGB)
+    img = transform(img)
+    # print(f"Loaded image shape: {img.shape}") 
+    return img
 
 
 scene_paths = [
-    [
-        "datasets/dataset_real_5_231024/intellab_01/sensor_0/image_proc/02351.jpg",
-        "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02479.jpg",
-        "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02491.jpg",
-    ],
+    # [
+    #     "datasets/dataset_real_5_231024/intellab_01/sensor_0/image_proc/02351.jpg",
+    #     "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02479.jpg",
+    #     "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02491.jpg",
+    # ],
     [
         "datasets/dataset_real_5_231024/sn-corridor_01/sensor_0/image_proc/00977.jpg",
         "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/01412.jpg",
     ],
-    [
-        "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03431.jpg",
-        "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03377.jpg",
-        "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03407.jpg",
-    ],
-    [
-        "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/03052.jpg",
-        "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/00562.jpg",
-        "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/01038.jpg",
-    ],
-    [
-        "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/04189.jpg",
-        "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/00484.jpg",
-        "datasets/dataset_real_5_231024/sn05_01/sensor_0/image_proc/01057.jpg",
-    ],
+    # [
+    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03431.jpg",
+    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03377.jpg",
+    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03407.jpg",
+    # ],
+    # [
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/03052.jpg",
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/00562.jpg",
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/01038.jpg",
+    # ],
+    # [
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/04189.jpg",
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/00484.jpg",
+    #     "datasets/dataset_real_5_231024/sn05_01/sensor_0/image_proc/01057.jpg",
+    # ],
+    # [
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_1.jpeg",
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_2.jpeg",
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_3.jpeg",
+    # ],
+    # [
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_1.png",
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_2.png",
+    # ]
+    # [
+    # [
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest6_2_1.png",
+    #     "/workspace/shiyuan_ws/CoViS-Net/mytest6_2_2.png",
+    # ]
+
 ]
 
 
@@ -60,6 +78,7 @@ def run(model_base):
     bev_dec = torch.jit.load(f"models/{model_base}_float32_jit_cpu_bevdec.ts")
 
     for scene_path in scene_paths:
+        print("scene_path", scene_path)
         data = {
             "img": torch.stack(
                 [load_img(path) for i, path in enumerate(scene_path)], dim=0
@@ -88,6 +107,9 @@ def run(model_base):
                     data["edge_preds"]["msg"].append(m)
 
                     pos, pos_var, heading, heading_var = post(m)
+                    print(
+                        f"pos: {pos}, pos_var: {pos_var}, heading: {heading}, heading_var: {heading_var}"
+                    )
                     data["edge_preds"]["pos"].append(pos[0])
                     data["edge_preds"]["rot"].append(heading[0])
                     data["edge_preds"]["pos_var"].append(pos_var[0])
@@ -112,6 +134,8 @@ def run(model_base):
             data["edge_preds"],
         )
     plt.show()
+    plt.savefig("out.png")
+    plt.close() 
 
 
 if __name__ == "__main__":
