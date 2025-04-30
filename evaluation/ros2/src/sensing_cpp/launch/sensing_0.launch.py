@@ -40,7 +40,8 @@ def generate_launch_description():
             parameters=[
                 {
                     # "model_enc_file": "models/oyu1brtpe18_float16_trt_enc.ts", # seq 128
-                    "model_enc_file": "models/0kc5po4ee18_float32_jit_cpu_enc.ts",
+                    # "model_enc_file": "models/0kc5po4ee18_float32_jit_cpu_enc.ts",
+                    "model_enc_file": "models/0kc5po4ee18_float32_jit_cuda_enc.ts",  # 
                     #"model_enc_file": "models/0kc5po4ee18_float16_trt_enc.ts", # seq 128, 6D
                     "image_inp_crop": 224,
                     "swmc_config_file": swmc_config,

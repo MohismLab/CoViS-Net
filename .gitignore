@@ -19,3 +19,4 @@ models (copy)/last.ckpt
 models (copy)/README.md
 test_img
 
+*.png

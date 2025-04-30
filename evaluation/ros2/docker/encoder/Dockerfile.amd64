@@ -43,31 +43,11 @@ WORKDIR /opt/inference
 # # Clone TensorRT repository
 RUN git clone https://github.com/pytorch/TensorRT.git --branch main
 WORKDIR /opt/inference/TensorRT
-# RUN cp toolchains/workspaces/WORKSPACE.linux WORKSPACE
-# ADD docker/encoder/pr2118_version_fix.patch .
-# RUN git apply pr2118_version_fix.patch
+
 
 # # Build TensorRT
-# RUN bazel build //:libtorchtrt
 RUN bazel build //:libtorchtrt -c opt
-
 RUN mkdir -p /opt/libtorchtrt/include /opt/libtorchtrt/lib &&     cp -r cpp/include/torch_tensorrt /opt/libtorchtrt/include/ &&     cp bazel-bin/cpp/lib/* /opt/libtorchtrt/lib/
-
-# RUN mkdir build && cmake -S . -B build -DTorch_DIR=/opt/libtorch/share/cmake/Torch -DCMAKE_BUILD_TYPE=Release
-# RUN cmake --build build -j 8
-
-# # Install Python bindings
-# WORKDIR /opt/inference/TensorRT/py
-# RUN python3 setup.py install --use-cxx11-abi
-
-# # Clean up TensorRT source
-# WORKDIR /opt/inference
-# RUN rm -rf TensorRT
-
-# RUN python3 -m pip install --upgrade tensorrt
-
-# RUN pip3 install --pre torch-tensorrt --index-url https://download.pytorch.org/whl/nightly/cu128
-
 
 RUN cp /root/.cache/bazel/_bazel_root/0555b06411bdc5a650e0565d126ef44b/execroot/_main/bazel-out/k8-opt/bin/_solib_k8/_U_A_A+_Urepo_Urules3+libtorch_S_S_Cc10___Ulib/libc10.so /opt/libtorch/lib/.
 
@@ -88,7 +68,7 @@ COPY configs/cyclone_dds_profile_base.xml /opt/robomaster
 
 WORKDIR /opt/robomaster
 
-# RUN . /opt/ros/humble/setup.sh && colcon build --symlink-install --packages-select sensing_msgs sensing_cpp
+RUN . /opt/ros/humble/setup.sh && colcon build --symlink-install --packages-select sensing_msgs sensing_cpp
 
 ENV ROS_DOMAIN_ID=0
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

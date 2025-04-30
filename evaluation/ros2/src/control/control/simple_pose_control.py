@@ -1,9 +1,12 @@
 import rclpy
 import numpy as np
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data, QoSProfile, QoSReliabilityPolicy
+
 # from robomaster_msgs.msg import WheelSpeed
 from sensing_msgs.msg import WheelSpeed
+
+from geometry_msgs.msg import Twist
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from scipy.spatial.transform import Rotation as R
@@ -19,7 +22,9 @@ class SimplePoseControl(Node):
         self.declare_parameter("ref_px", 0.5)
         self.declare_parameter("ref_py", 0.0)
         self.declare_parameter("ref_yaw", 0.0)
-        self.declare_parameter("pose_topic", "camera_0/pose_r0c0")   
+        self.declare_parameter("pose_topic", "camera_0/pose_r0c0")
+
+        reliable_qos = QoSProfile(depth=10, reliability=QoSReliabilityPolicy.RELIABLE)
 
         self.create_subscription(
             PoseWithCovarianceStamped,
@@ -31,7 +36,12 @@ class SimplePoseControl(Node):
         self.vel_pub = self.create_publisher(
             WheelSpeed,
             "cmd_wheels",
-            qos_profile=qos_profile_sensor_data,
+            qos_profile=reliable_qos,
+        )
+        self.twist_pub = self.create_publisher(
+            Twist,
+            "cmd_vel",
+            qos_profile=reliable_qos,
         )
 
         self.control_timer = self.create_timer(1.0 / 15, self.control)
@@ -59,12 +69,24 @@ class SimplePoseControl(Node):
     def pub_vel(self, vx, vy, omega):
         vel = WheelSpeed()
         v = np.array([vx, vy, omega])
-        wheel_speed = np.rad2deg(self.dyn_inv @ v)
+        # wheel_speed = np.rad2deg(self.dyn_inv @ v)
+        wheel_speed = self.dyn_inv @ v
         vel.fl = int(wheel_speed[0])
         vel.fr = int(wheel_speed[1])
         vel.rl = int(wheel_speed[2])
         vel.rr = int(wheel_speed[3])
         self.vel_pub.publish(vel)
+
+    def pub_twist(self, vx, vy, omega):
+        twist = Twist()
+        twist.angular.x = 0.0
+        twist.angular.y = 0.0
+        twist.angular.z = float(omega)
+        twist.linear.x = float(vx)
+        twist.linear.y = float(vy)
+        twist.linear.z = 0.0
+        self.twist_pub.publish(twist)
+        self.get_logger().info("publish twist")
 
     def control(self):
         if self.p is None or self.r is None or self.cov is None:
@@ -78,6 +100,10 @@ class SimplePoseControl(Node):
             gain_pvx = 1.3
             gain_dvx = 0.08
             e_x = self.p.x - self.get_parameter("ref_px").value
+            self.get_logger().info(
+                f"p.x: {self.p.x}, ref_px: {self.get_parameter('ref_px').value}, e_x: {e_x}"
+            )
+            raw_vy = gain_pvx * e_x + gain_dvx * (e_x - self.prev_e_x) * 15
             vy = -max(
                 -max_vx,
                 min(max_vx, gain_pvx * e_x + gain_dvx * (e_x - self.prev_e_x) * 15),
@@ -88,6 +114,10 @@ class SimplePoseControl(Node):
             gain_pvy = 1.45
             gain_dvy = 0.04
             e_y = self.p.z - self.get_parameter("ref_py").value
+            self.get_logger().info(
+                f"p.y: {self.p.z}, ref_py: {self.get_parameter('ref_py').value}, e_y: {e_y}"
+            )
+            raw_vx = gain_pvy * e_y + gain_dvy * (e_y - self.prev_e_y) * 15
             vx = -max(
                 -max_vy,
                 min(max_vy, gain_pvy * e_y + gain_dvy * (e_y - self.prev_e_y) * 15),
@@ -109,15 +139,17 @@ class SimplePoseControl(Node):
             )
             self.prev_e_yaw = e_yaw
 
-        self.pub_vel(vx, vy, omega)
-        self.get_logger().info("publish vel")
+        self.pub_twist(vx, vy, omega)
+        # self.pub_vel(vx, vy, omega)
 
     def pose_callback(self, pose):
         self.p = pose.pose.pose.position
         q = pose.pose.pose.orientation
-        self.get_logger().info(
-            f"pose: {self.p.x}, {self.p.y}, {self.p.z}, {q.x}, {q.y}, {q.z}, {q.w}"
-        )
+        angle = R.from_quat([q.x, q.y, q.z, q.w]).as_euler("zxy", degrees=True)
+        # self.get_logger().info(f"Angles Yaw: {angle[1]}")
+        # self.get_logger().info(
+        #     f"pose: {self.p.x}, {self.p.y}, {self.p.z}, {q.x}, {q.y}, {q.z}, {q.w}"
+        # )
         self.cov = pose.pose.covariance.reshape(6, 6)
         self.r = R.from_quat([q.x, q.y, q.z, q.w]).as_rotvec()
 

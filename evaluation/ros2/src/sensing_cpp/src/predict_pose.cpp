@@ -200,8 +200,8 @@ private:
         pitch = pitch * 180.0 / M_PI;
         yaw = yaw * 180.0 / M_PI;
 
-        RCLCPP_INFO(get_logger(), "Orientation (roll, pitch, yaw) in degrees: %f, %f, %f", roll, pitch, yaw);
-
+        // RCLCPP_INFO(get_logger(), "Orientation (roll, pitch, yaw) in degrees: %f, %f, %f", roll, pitch, yaw);
+        // RCLCPP_INFO(get_logger(), "pose (x, y, z): %f, %f, %f", msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
         auto cov = torch::diag(torch::cat({pos_var, rot_var.repeat(3)}, 0));
         auto cov_flat = cov.flatten().to(torch::kFloat64).contiguous();
         auto data_start = cov_flat.data_ptr<double>();

@@ -7,6 +7,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 import cv2
 from cv_bridge import CvBridge
+import os
 
 class ImagePublisher(Node):
     def __init__(self):
@@ -17,7 +18,7 @@ class ImagePublisher(Node):
         self.br = CvBridge()
         
         # 讀取圖片
-        self.img_path = '/home/ysy/shiyuan_ws/CoViS-Net/test1.png'  # <-- 這裡換成你的圖片路徑
+        self.img_path = os.path.join(os.path.dirname(__file__), 'test_img/6-2.png')  # 使用相對路徑
         self.cv_image = cv2.imread(self.img_path)
         
         if self.cv_image is None:

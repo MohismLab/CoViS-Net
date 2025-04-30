@@ -11,9 +11,9 @@ def generate_launch_description():
     if lead == "robomaster":
         pose_topic = "camera_0/pose_r0c0"
         poses = {
-            "/robomaster_1": {"px": 0.5, "py": -0.5, "yaw": 0.0}, # left
-            "/robomaster_2": {"px": -0.5, "py": -0.5, "yaw": 0.0}, # right
-            "/robomaster_3": {"px": 0.5, "py": 0.5, "yaw": 0.0}, # back left
+            "/robomaster_1": {"px": 0.2, "py": -0.1, "yaw": 0.0}, # left
+            "/robomaster_2": {"px": -0.5, "py": -0.0, "yaw": 0.0}, # right
+            "/robomaster_3": {"px": 0.5, "py": 0.0, "yaw": 0.0}, # back left
         }
     elif lead == "unitree":
         pose_topic = "camera_0/pose_r20c0"
@@ -48,6 +48,10 @@ def generate_launch_description():
                     "ref_py": poses[own_base_ns]["py"],
                     "ref_yaw": poses[own_base_ns]["yaw"],
                 }
+            ],
+            remappings=[
+                ('/robomaster_1/cmd_wheels', '/agent1/cmd_wheels'),
+                ('/robomaster_1/cmd_vel', '/agent1/cmd_vel'),                
             ],
         )
         nodes.append(node)
