@@ -4,15 +4,19 @@ from geometry_msgs.msg import Twist
 import sys
 import tty
 import termios
+import argparse
+
+# Constants
+LINEAR_SPEED = 0.5
+ANGULAR_SPEED = 2.0
 
 class KeyboardPublisher(Node):
-    def __init__(self):
+    def __init__(self, topic_name):
         super().__init__('keyboard_cmd_vel_publisher')
-        self.publisher_ = self.create_publisher(Twist, '/agent0/cmd_vel', 10)
-        self.get_logger().info('Keyboard Publisher Initialized')
+        self.publisher_ = self.create_publisher(Twist, topic_name, 10)
+        self.get_logger().info(f'Keyboard Publisher Initialized, publishing to {topic_name}')
 
     def get_key(self):
-        # 獲取鍵盤按鍵
         fd = sys.stdin.fileno()
         old_settings = termios.tcgetattr(fd)
         try:
@@ -23,7 +27,7 @@ class KeyboardPublisher(Node):
         return key
 
     def run(self):
-        self.get_logger().info('Use keys: [W] forward, [S] back, [A] left, [D] right, [Q/E] rotate, [SPACE] stop, [Ctrl+C] to quit')
+        self.get_logger().info('Use keys: [W] forward, [S] back, [A] left, [D] right, [Q/E] rotate, [SPACE] stop, [c] to quit')
         twist = Twist()
         try:
             while rclpy.ok():
@@ -31,19 +35,21 @@ class KeyboardPublisher(Node):
                 twist = Twist()  # reset every time
 
                 if key == 'w':
-                    twist.linear.x = 0.3
+                    twist.linear.x = LINEAR_SPEED
                 elif key == 's':
-                    twist.linear.x = -0.3
+                    twist.linear.x = -LINEAR_SPEED
                 elif key == 'a':
-                    twist.linear.y = 0.3
+                    twist.linear.y = LINEAR_SPEED
                 elif key == 'd':
-                    twist.linear.y = -0.3
+                    twist.linear.y = -LINEAR_SPEED
                 elif key == 'q':
-                    twist.angular.z = 0.3
+                    twist.angular.z = ANGULAR_SPEED
                 elif key == 'e':
-                    twist.angular.z = -0.3
+                    twist.angular.z = -ANGULAR_SPEED
                 elif key == ' ':
                     twist = Twist()  # stop
+                elif key == 'c':
+                    return
                 else:
                     continue  # ignore unknown keys
 
@@ -51,13 +57,25 @@ class KeyboardPublisher(Node):
 
         except KeyboardInterrupt:
             self.get_logger().info('Keyboard control interrupted.')
+            stop_twist = Twist()
+            self.publisher_.publish(stop_twist)
+            raise  
 
-def main(args=None):
-    rclpy.init(args=args)
-    node = KeyboardPublisher()
-    node.run()
-    node.destroy_node()
-    rclpy.shutdown()
+def main():
+    parser = argparse.ArgumentParser(description='Keyboard control node for ROS2')
+    parser.add_argument('--topic', type=str, default='/s1_0/twist',
+                      help='Topic name to publish Twist messages (default: /s1_0/twist)')
+    parsed_args = parser.parse_args()
+    
+    rclpy.init()
+    node = KeyboardPublisher(parsed_args.topic)
+    try:
+        node.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
