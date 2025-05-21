@@ -62,16 +62,28 @@ scene_paths = [
     #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_2.png",
     # ]
     # [
-    [
-        "/workspace/shiyuan_ws/CoViS-Net/test_img/16-1.png",
-        "/workspace/shiyuan_ws/CoViS-Net/test_img/16-2.png",
-        # # "/workspace/shiyuan_ws/CoViS-Net/test_img/5-3.jpeg",
+    # [
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-1.png",
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-2.png",
+    #     # # "/workspace/shiyuan_ws/CoViS-Net/test_img/5-3.jpeg",
 
+    # ],
+    # [
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-1.jpeg",
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-2.jpeg",
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-3.jpeg",
+    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-4.jpeg",
+    # ], 
+    [
+        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-1.png",
+        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-2.png",
+        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-3.png",
     ]
 
 ]
 
 CUDA = False
+
 def run(model_base):
     if not CUDA:
         enc = torch.jit.load(f"models/{model_base}_float32_jit_cpu_enc.ts")
@@ -181,3 +193,5 @@ def run(model_base):
 
 if __name__ == "__main__":
     run("0kc5po4ee18")
+    # my model
+    # run("mr5eierxe09")

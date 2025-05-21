@@ -399,6 +399,7 @@ class MyLightningCLI(LightningCLI):
 
 def main_cli():
     torch.set_float32_matmul_precision("high")
+    # torch.cuda.set_device(0)
     MyLightningCLI(TrainerModuleLocalize, RelPosDataModule, save_config_callback=None)
 
 

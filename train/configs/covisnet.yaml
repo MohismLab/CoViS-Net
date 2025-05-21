@@ -1,9 +1,10 @@
 # lightning.pytorch==2.4.0
 trainer:
   accelerator: auto
+  precision: 16-mixed
   logger: False
   callbacks: null
-  max_epochs: 20
+  max_epochs: 5
   log_every_n_steps: 10
 model:
   model:
@@ -25,14 +26,19 @@ model:
   num_epochs: 20
   seed: 44
 data:
-  data_dir: datasets/dataset_zip_240222
+  # data_dir: datasets/dataset_zip_240222
+  # data_dir: datasets/dataset_zip_20250422
+  data_dir: datasets/simple_room_0
   data_test_dir: datasets/dataset_real_5_231024
   batch_size: 16
+  # batch_size: 8
   num_workers: 32
   nodes_per_sample: 5
   quat_diff_max: null
   input_resolution: 224
   distance_upper_bound: 2.0
-  n_samples: 1
-  data_frac: 0.25
+  # n_samples: 1
+  n_samples: 10
+  # data_frac: 0.25
+  data_frac: 1.0
 ckpt_path: null

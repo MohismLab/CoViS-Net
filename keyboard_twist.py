@@ -7,7 +7,7 @@ import termios
 import argparse
 
 # Constants
-LINEAR_SPEED = 0.5
+LINEAR_SPEED = 0.2
 ANGULAR_SPEED = 2.0
 
 class KeyboardPublisher(Node):

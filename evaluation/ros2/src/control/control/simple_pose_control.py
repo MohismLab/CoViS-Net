@@ -96,7 +96,8 @@ class SimplePoseControl(Node):
         vy = 0.0
         omega = 0.0
         if self.cov[0, 0] < 0.75 and self.cov[2, 2] < 0.75:
-            max_vx = 0.75
+            # max_vx = 0.75
+            max_vx = 0.2
             gain_pvx = 1.3
             gain_dvx = 0.08
             e_x = self.p.x - self.get_parameter("ref_px").value
@@ -110,7 +111,8 @@ class SimplePoseControl(Node):
             )
             self.prev_e_x = e_x
 
-            max_vy = 0.75
+            # max_vy = 0.75
+            max_vy = 0.2
             gain_pvy = 1.45
             gain_dvy = 0.04
             e_y = self.p.z - self.get_parameter("ref_py").value
@@ -130,6 +132,9 @@ class SimplePoseControl(Node):
             gain_domega = 0.02
 
             e_yaw = self.r[1] - self.get_parameter("ref_yaw").value
+            self.get_logger().info(
+                f"r[1]: {np.rad2deg(self.r[1]):.2f}°, ref_yaw: {np.rad2deg(self.get_parameter('ref_yaw').value):.2f}°, e_yaw: {np.rad2deg(e_yaw):.2f}°"
+            )
             omega = max(
                 -max_w,
                 min(
@@ -137,6 +142,7 @@ class SimplePoseControl(Node):
                     gain_pomega * e_yaw + gain_domega * (e_yaw - self.prev_e_yaw) * 15,
                 ),
             )
+            omega = np.rad2deg(omega)
             self.prev_e_yaw = e_yaw
 
         self.pub_twist(vx, vy, omega)

@@ -11,7 +11,7 @@ def generate_launch_description():
     if lead == "robomaster":
         pose_topic = "camera_0/pose_r0c0"
         poses = {
-            "/robomaster_1": {"px": 0.2, "py": -0.1, "yaw": 0.0}, # left
+            "/robomaster_1": {"px": 0.2, "py": -0.2, "yaw": 0.0}, # left
             "/robomaster_2": {"px": -0.5, "py": -0.0, "yaw": 0.0}, # right
             "/robomaster_3": {"px": 0.5, "py": 0.0, "yaw": 0.0}, # back left
         }
@@ -51,7 +51,8 @@ def generate_launch_description():
             ],
             remappings=[
                 ('/robomaster_1/cmd_wheels', '/agent1/cmd_wheels'),
-                ('/robomaster_1/cmd_vel', '/agent1/cmd_vel'),                
+                # ('/robomaster_1/cmd_vel', '/agent1/cmd_vel'),
+                ('/robomaster_1/cmd_vel', '/s1_1/twist'),   
             ],
         )
         nodes.append(node)

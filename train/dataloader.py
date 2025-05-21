@@ -211,12 +211,17 @@ class RelPosDataset(Dataset):
         for _, meta in samples.iterrows():
             rgb_path = f"rgb/{meta.image_id:05d}.jpg"
             img_path = self.data_path / meta.dataset_id / rgb_path
+            if not img_path.exists():
+                rgb_path = f"rgb/{meta.image_id:06d}.png"
+                img_path = self.data_path / meta.dataset_id / rgb_path
             if img_path.is_file():
-                img = Image.open(img_path)
+                # img = Image.open(img_path)
+                img = Image.open(img_path).convert('RGB')
             else:
                 tfile = self.rgb_archives[meta.dataset_id]
                 data = tfile.read(Path(rgb_path).name)
-                img = Image.open(BytesIO(data))
+                # img = Image.open(BytesIO(data))
+                img = Image.open(BytesIO(data)).convert('RGB')
 
             img_transformed = transform(img)
             imgs.append(img_transformed)

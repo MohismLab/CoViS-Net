@@ -20,3 +20,7 @@ models (copy)/README.md
 test_img
 
 *.png
+models/mr5eierx/epoch=9-step=200.ckpt
+models/mr5eierx/last.ckpt
+models (copy)/0kc5po4e/epoch=18-step=452067.ckpt
+models (copy)/0kc5po4e/last.ckpt
