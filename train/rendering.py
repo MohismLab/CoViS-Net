@@ -131,7 +131,7 @@ def render_single(img, bev_label, bev_pred, edge_index, edge_label, edge_pred):
         ):
             ax = axs[f"gt_{j}"]
             heading = roma.unitquat_to_rotvec(q)[1]
-            pos = torch.Tensor([-p[0], p[2]])
+            pos = torch.Tensor([-p[0], p[2]]) # careful with the -p[0]
             plot_marker(ax, pos, None, heading, None, colors[i])
 
     if not any([v is None for v in edge_pred.values()]):
@@ -145,7 +145,7 @@ def render_single(img, bev_label, bev_pred, edge_index, edge_label, edge_pred):
         ):
             ax = axs[f"pred_{j}"]
             heading = roma.unitquat_to_rotvec(q_pred)[1]
-            pos = torch.Tensor([-p_pred[0], p_pred[2]])
+            pos = torch.Tensor([-p_pred[0], p_pred[2]]) # careful with the -p_pred[0]
             pos_var = torch.Tensor([p_var[2], p_var[0]])
             if pos_var[0] < 1.5 or pos_var[1] < 1.5:
                 plot_marker(ax, pos, pos_var, heading, q_var[0], colors[i])
