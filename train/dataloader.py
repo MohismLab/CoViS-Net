@@ -115,6 +115,7 @@ class RelPosDataset(Dataset):
         if self.samples is None:
             print("No cached samples found, generating...")
             self.samples = self.generate_samples(cfg, meta)
+            print(f"Generated {len(self.samples)} samples")
             with open(cache_dir / f"{cfg_hash}.pkl", "wb") as file:
                 pickle.dump((self.samples, cfg), file)
 
@@ -209,19 +210,19 @@ class RelPosDataset(Dataset):
         samples = self.samples[idx]
 
         for _, meta in samples.iterrows():
-            rgb_path = f"rgb/{meta.image_id:05d}.jpg"
+            rgb_path = f"rgb/{meta.image_id:06d}.jpg"
             img_path = self.data_path / meta.dataset_id / rgb_path
-            if not img_path.exists():
-                rgb_path = f"rgb/{meta.image_id:06d}.png"
-                img_path = self.data_path / meta.dataset_id / rgb_path
+            # if not img_path.exists():
+            #     rgb_path = f"rgb/{meta.image_id:06d}.png"
+            #     img_path = self.data_path / meta.dataset_id / rgb_path
             if img_path.is_file():
-                # img = Image.open(img_path)
-                img = Image.open(img_path).convert('RGB')
+                img = Image.open(img_path)
+                # img = Image.open(img_path).convert('RGB')
             else:
                 tfile = self.rgb_archives[meta.dataset_id]
                 data = tfile.read(Path(rgb_path).name)
-                # img = Image.open(BytesIO(data))
-                img = Image.open(BytesIO(data)).convert('RGB')
+                img = Image.open(BytesIO(data))
+                # img = Image.open(BytesIO(data)).convert('RGB')
 
             img_transformed = transform(img)
             imgs.append(img_transformed)
@@ -530,6 +531,7 @@ class RelPosDataModule(pl.LightningDataModule):
 
     def setup(self, stage: str):
         if "real" in self.data_dir:
+            print(f"Loading real dataset from {self.data_dir}")
             self.dataset_eval = [
                 RealRelPosDataset(
                     self.data_dir,
@@ -541,6 +543,7 @@ class RelPosDataModule(pl.LightningDataModule):
             self.dataset_train = self.dataset_eval[0]
             self.dataset_test = self.dataset_eval
         else:
+            print(f"dataset_train: Loading dataset from {self.data_dir}")
             self.dataset_train = RelPosDataset(
                 self.data_dir,
                 splits=[0.0, 0.8],
@@ -551,6 +554,7 @@ class RelPosDataModule(pl.LightningDataModule):
                 input_resolution=self.input_resolution,
                 quat_diff_max=self.quat_diff_max,
             )
+            print(f"dataset_eval: Loading dataset from {self.data_dir}")
             self.dataset_eval = [
                 RelPosDataset(
                     self.data_dir,
@@ -563,15 +567,17 @@ class RelPosDataModule(pl.LightningDataModule):
                     quat_diff_max=self.quat_diff_max,
                 )
             ]
-            if self.data_test_dir is not None:
-                self.dataset_eval.append(
-                    RealRelPosDataset(
-                        self.data_test_dir,
-                        splits=[0.0, 1.0],
-                        nodes_per_sample=3,
-                        input_resolution=self.input_resolution,
-                    )
-                )
+            # if self.data_test_dir is not None:
+            #     print(f"dataset_eval: add real dataset from {self.data_test_dir}")
+            #     self.dataset_eval.append(
+            #         RealRelPosDataset(
+            #             self.data_test_dir,
+            #             splits=[0.0, 1.0],
+            #             nodes_per_sample=3,
+            #             input_resolution=self.input_resolution,
+            #         )
+            #     )
+            print(f"dataset_test: Loading dataset from {self.data_dir}")
             self.dataset_test = [
                 RelPosDataset(
                     self.data_dir,
@@ -584,15 +590,16 @@ class RelPosDataModule(pl.LightningDataModule):
                     quat_diff_max=self.quat_diff_max,
                 )
             ]
-            if self.data_test_dir is not None:
-                self.dataset_test.append(
-                    RealRelPosDataset(
-                        self.data_test_dir,
-                        splits=[0.0, 1.0],
-                        nodes_per_sample=3,
-                        input_resolution=self.input_resolution,
-                    )
-                )
+            # if self.data_test_dir is not None:
+            #     print(f"dataset_test: add real dataset from {self.data_test_dir}")
+            #     self.dataset_test.append(
+            #         RealRelPosDataset(
+            #             self.data_test_dir,
+            #             splits=[0.0, 1.0],
+            #             nodes_per_sample=3,
+            #             input_resolution=self.input_resolution,
+            #         )
+            #     )
 
     def train_dataloader(self):
         return DataLoader(

@@ -5,13 +5,13 @@ import numpy as np
 from pathlib import Path
 
 
-out_base_dir = Path("./exported_models")
+out_base_dir = Path("./models")
 # model_in_file = Path("artifacts/model-kpqv7omx:v6/model.ckpt")
 # model_in_file = Path("models_bev_pose/cklmxq61/epoch=12-step=155025-validation_loss=0.000.ckpt")
 # model_in_file = Path("models_bev_pose/ugz0kinn/epoch=11-step=143100-v1.ckpt")
-model_prefix = "0kc5po4ee18"  # model_in_file.parent.stem.replace(":", "-")
-dtype = torch.half
-# dtype = torch.float
+model_prefix = "7v8j82qc"  # model_in_file.parent.stem.replace(":", "-")
+# dtype = torch.half
+dtype = torch.float
 type_prefix = str(dtype).split(".")[1]
 dev_str = "cuda"
 dev = torch.device(dev_str)

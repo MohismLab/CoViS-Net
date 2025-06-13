@@ -239,8 +239,11 @@ class BevDecoder(torch.nn.Module):
 
 out_base_dir = Path("./models")
 # model_in_file = Path("models/0kc5po4e/epoch=18-step=452067.ckpt")
-model_in_file = Path("models/mr5eierx/epoch=9-step=200.ckpt")
-device_str = "cpu"
+# model_in_file = Path("models/mr5eierx/epoch=9-step=200.ckpt")
+model_in_file = Path("checkpoints_covisnet/7v8j82qc/epoch=29-step=150000.ckpt")
+
+# device_str = "cpu"
+device_str = "cuda"
 dev = torch.device(device_str)
 gnn_in_channels = 24
 gnn_in_seq_len = 128

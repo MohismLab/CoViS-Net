@@ -327,6 +327,9 @@ class TrainerModuleLocalize(pl.LightningModule):
                 break
 
     def configure_optimizers(self):
+        dataloader_len = len(self.trainer.datamodule.train_dataloader())
+        print(f"训练数据加载器长度: {dataloader_len}")
+        
         optimizer = torch.optim.AdamW(
             self.parameters(),
             betas=self.betas,
@@ -343,6 +346,15 @@ class TrainerModuleLocalize(pl.LightningModule):
             pct_start=self.warmup_epochs / self.num_epochs,
             epochs=self.num_epochs,
         )
+        # # 使用更稳定的CosineAnnealingWarmRestarts调度器
+        # # 避免OneCycleLR在checkpoint恢复时的步数问题
+        # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        #     optimizer,
+        #     T_0=dataloader_len * 20,  # 每10个epoch重启一次
+        #     T_mult=1,
+        #     eta_min=self.initial_learning_rate * 0.01,
+        #     last_epoch=-1
+        # )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {

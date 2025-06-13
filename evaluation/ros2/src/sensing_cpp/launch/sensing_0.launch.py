@@ -39,9 +39,9 @@ def generate_launch_description():
             name="encode_img",
             parameters=[
                 {
-                    # "model_enc_file": "models/oyu1brtpe18_float16_trt_enc.ts", # seq 128
+                    "model_enc_file": "models/7v8j82qce29_float32_jit_cuda_enc.ts",
                     # "model_enc_file": "models/0kc5po4ee18_float32_jit_cpu_enc.ts",
-                    "model_enc_file": "models/0kc5po4ee18_float32_jit_cuda_enc.ts",  # 
+                    # "model_enc_file": "models/0kc5po4ee18_float32_jit_cuda_enc.ts",  # 
                     #"model_enc_file": "models/0kc5po4ee18_float16_trt_enc.ts", # seq 128, 6D
                     "image_inp_crop": 224,
                     "swmc_config_file": swmc_config,
@@ -49,33 +49,36 @@ def generate_launch_description():
             ],
         )
     ]
-    if other_cam_ns is not None:
-        pose_topic = "pose_" + other_cam_ns.replace("/", "").replace(
-            "robomaster_", "r"
-        ).replace("camera_", "c")
+    # if other_cam_ns is not None:
+    #     pose_topic = "pose_" + other_cam_ns.replace("/", "").replace(
+    #         "robomaster_", "r"
+    #     ).replace("camera_", "c")
 
-        # nodes.append(
-        #     Node(
-        #         package="sensing_cpp",
-        #         executable="predict_pose",
-        #         namespace=own_cam_ns,
-        #         name="predict_pose",
-        #         parameters=[
-        #             {
-        #                 # "model_msg_file": "models/oyu1brtpe18_float16_trt_msg.ts", # 128
-        #                 # "model_post_file": "models/oyu1brtpe18_float32_jit_post.ts", # 128
+    #     nodes.append(
+    #         Node(
+    #             package="sensing_cpp",
+    #             executable="predict_pose",
+    #             namespace=own_cam_ns,
+    #             name="predict_pose",
+    #             parameters=[
+    #                 {
+    #                     # "model_msg_file": "models/oyu1brtpe18_float16_trt_msg.ts", # 128
+    #                     # "model_post_file": "models/oyu1brtpe18_float32_jit_post.ts", # 128
 
-        #                 "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
-        #                 "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
+    #                     # "model_msg_file": "models/0kc5po4ee18_float32_jit_cpu_msg.ts",
+    #                     # "model_post_file": "models/0kc5po4ee18_float32_jit_cpu_post.ts",
+                        
+    #                     "model_msg_file": "models/0kc5po4ee18_float32_jit_cuda_msg.ts",  # 128
+    #                     "model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
 
-        #                 #"model_msg_file": "models/0kc5po4ee18_float16_trt_msg.ts",  # 128, 6D
-        #                 #"model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
-        #                 "cam_namespace_other": other_cam_ns,
-        #                 "pose_topic_name": pose_topic,
-        #                 "swmc_config_file": swmc_config,
-        #             }
-        #         ],
-        #     )
-        # )
+    #                     #"model_msg_file": "models/0kc5po4ee18_float16_trt_msg.ts",  # 128, 6D
+    #                     #"model_post_file": "models/0kc5po4ee18_float32_jit_cuda_post.ts",  # 128, 6D
+    #                     "cam_namespace_other": other_cam_ns,
+    #                     "pose_topic_name": pose_topic,
+    #                     "swmc_config_file": swmc_config,
+    #                 }
+    #             ],
+    #         )
+    #     )
 
     return LaunchDescription(nodes)
