@@ -26,61 +26,67 @@ def load_img(path):
     # print(f"Loaded image shape: {img.shape}") 
     return img
 
+# scene_paths = [
+#     # [
+#         # "datasets/dataset_real_5_231024/intellab_01/sensor_0/image_proc/02351.jpg",
+#         # "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02479.jpg",
+#         # "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02491.jpg",
+#     # ],
+#     # [
+#         # "datasets/dataset_real_5_231024/sn-corridor_01/sensor_0/image_proc/00977.jpg",
+#         # "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/01412.jpg",
+#     # ],
+#     # [
+#     #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03431.jpg",
+#     #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03377.jpg",
+#     #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03407.jpg",
+#     # ],
+#     # [
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/03052.jpg",
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/00562.jpg",
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/01038.jpg",
+#     # ],
+#     # [
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/04189.jpg",
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/00484.jpg",
+#     #     "datasets/dataset_real_5_231024/sn05_01/sensor_0/image_proc/01057.jpg",
+#     # ],
+#     # [
+#     #     "/workspace/shiyuan_ws/CoViS-Net/mytest_1.jpeg",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/mytest_2.jpeg",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/mytest_3.jpeg",
+#     # ],
+#     # [
+#     #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_1.png",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_2.png",
+#     # ]
+#     # [
+#     # [
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-1.png",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-2.png",
+#     #     # # "/workspace/shiyuan_ws/CoViS-Net/test_img/5-3.jpeg",
+
+#     # ],
+#     # [
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-1.jpeg",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-2.jpeg",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-3.jpeg",
+#     #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-4.jpeg",
+#     # ], 
+#     [
+#         "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-1.png",
+#         "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-2.png",
+#         "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-3.png",
+#     ]
+# ]
 
 scene_paths = [
-    # [
-        # "datasets/dataset_real_5_231024/intellab_01/sensor_0/image_proc/02351.jpg",
-        # "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02479.jpg",
-        # "datasets/dataset_real_5_231024/intellab_01/sensor_2/image_proc/02491.jpg",
-    # ],
-    # [
-        # "datasets/dataset_real_5_231024/sn-corridor_01/sensor_0/image_proc/00977.jpg",
-        # "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/01412.jpg",
-    # ],
-    # [
-    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03431.jpg",
-    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03377.jpg",
-    #     "datasets/dataset_real_5_231024/sn-corridor_01/sensor_2/image_proc/03407.jpg",
-    # ],
-    # [
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/03052.jpg",
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_1/image_proc/00562.jpg",
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/01038.jpg",
-    # ],
-    # [
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/04189.jpg",
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_2/image_proc/00484.jpg",
-    #     "datasets/dataset_real_5_231024/sn05_01/sensor_0/image_proc/01057.jpg",
-    # ],
-    # [
-    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_1.jpeg",
-    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_2.jpeg",
-    #     "/workspace/shiyuan_ws/CoViS-Net/mytest_3.jpeg",
-    # ],
-    # [
-    #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_1.png",
-    #     "/workspace/shiyuan_ws/CoViS-Net/mytest2_2.png",
-    # ]
-    # [
-    # [
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-1.png",
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/16-2.png",
-    #     # # "/workspace/shiyuan_ws/CoViS-Net/test_img/5-3.jpeg",
-
-    # ],
-    # [
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-1.jpeg",
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-2.jpeg",
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-3.jpeg",
-    #     "/workspace/shiyuan_ws/CoViS-Net/test_img/outdoor/1-2-4.jpeg",
-    # ], 
     [
-        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-1.png",
-        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-2.png",
-        "/workspace/shiyuan_ws/CoViS-Net/test_img/isaacsim/3-3.png",
+        f"/workspace/shiyuan_ws/CoViS-Net/datasets/simple_room_0_square_formation/20/rgb/{i:06d}.jpg"
+        for i in range(4)
     ]
-
 ]
+
 
 CUDA = False
 
@@ -192,6 +198,7 @@ def run(model_base):
 
 
 if __name__ == "__main__":
-    run("0kc5po4ee18")
+    # run("0kc5po4ee18")
+    run("7v8j82qce29")
     # my model
     # run("mr5eierxe09")
