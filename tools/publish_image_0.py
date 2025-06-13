@@ -13,12 +13,12 @@ class ImagePublisher(Node):
     def __init__(self):
         super().__init__('image_publisher')
         self.publisher_ = self.create_publisher(Image, '/robomaster_0/camera_0/image_proc', 10)
-        timer_period = 0.5  # 發送頻率：0.5秒發一次
+        timer_period = 0.5  
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.br = CvBridge()
         
-        # 讀取圖片
-        self.img_path = os.path.join(os.path.dirname(__file__), 'test_img/6-2.png')  # 使用相對路徑
+   
+        self.img_path = os.path.join(os.path.dirname(__file__), 'test_img/6-2.png')  
         self.cv_image = cv2.imread(self.img_path)
         
         if self.cv_image is None:
@@ -26,7 +26,6 @@ class ImagePublisher(Node):
             rclpy.shutdown()
 
     def timer_callback(self):
-        # 建立Image消息
         msg = self.br.cv2_to_imgmsg(self.cv_image, encoding="bgr8")
         msg.header = Header()
         msg.header.stamp = self.get_clock().now().to_msg()
