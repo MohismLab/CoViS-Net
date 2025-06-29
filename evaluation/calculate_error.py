@@ -117,96 +117,6 @@ def filter_followers_only(data):
     return [entry for entry in data if not is_leader(entry)]
 
 
-def calculate_mean_error(gt_data, pred_data):
-    """Calculate mean position and pitch error between ground truth and predicted data"""
-
-    total_pos_error = 0.0
-    total_pitch_error = 0.0
-    count = 0
-
-    for gt_entry, pred_entry in zip(gt_data, pred_data):
-        if gt_entry["index"] != pred_entry["index"]:
-            print(f"Index mismatch: {gt_entry['index']} vs {pred_entry['index']}")
-            continue
-
-        # Calculate Euclidean distance for position error (2D: x, y only)
-        pos_error = (
-            (gt_entry["pos_x"] - pred_entry["pos_x"]) ** 2
-            + (gt_entry["pos_y"] - pred_entry["pos_y"]) ** 2
-        ) ** 0.5
-
-        # Calculate pitch error in degrees
-        gt_quat = [
-            gt_entry["quat_w"],
-            gt_entry["quat_x"],
-            gt_entry["quat_y"],
-            gt_entry["quat_z"],
-        ]
-        pred_quat = [
-            pred_entry["quat_w"],
-            pred_entry["quat_x"],
-            pred_entry["quat_y"],
-            pred_entry["quat_z"],
-        ]
-        pitch_err = pitch_error_degrees(gt_quat, pred_quat)
-
-        total_pos_error += pos_error
-        total_pitch_error += pitch_err
-        count += 1
-
-    if count > 0:
-        mean_pos_error = total_pos_error / count
-        mean_pitch_error = total_pitch_error / count
-        return mean_pos_error, mean_pitch_error, count
-    else:
-        print("No valid entries to calculate mean error")
-        return None, None, 0
-
-
-def calculate_median_error(gt_data, pred_data):
-    """Calculate median position and pitch error between ground truth and predicted data"""
-
-    pos_errors = []
-    pitch_errors = []
-
-    for gt_entry, pred_entry in zip(gt_data, pred_data):
-        if gt_entry["index"] != pred_entry["index"]:
-            print(f"Index mismatch: {gt_entry['index']} vs {pred_entry['index']}")
-            continue
-
-        # Calculate Euclidean distance for position error (2D: x, y only)
-        pos_error = (
-            (gt_entry["pos_x"] - pred_entry["pos_x"]) ** 2
-            + (gt_entry["pos_y"] - pred_entry["pos_y"]) ** 2
-        ) ** 0.5
-
-        # Calculate pitch error in degrees
-        gt_quat = [
-            gt_entry["quat_w"],
-            gt_entry["quat_x"],
-            gt_entry["quat_y"],
-            gt_entry["quat_z"],
-        ]
-        pred_quat = [
-            pred_entry["quat_w"],
-            pred_entry["quat_x"],
-            pred_entry["quat_y"],
-            pred_entry["quat_z"],
-        ]
-        pitch_err = pitch_error_degrees(gt_quat, pred_quat)
-
-        pos_errors.append(pos_error)
-        pitch_errors.append(pitch_err)
-
-    if pos_errors and pitch_errors:
-        median_pos_error = sorted(pos_errors)[len(pos_errors) // 2]
-        median_pitch_error = sorted(pitch_errors)[len(pitch_errors) // 2]
-        return median_pos_error, median_pitch_error, len(pos_errors)
-    else:
-        print("No valid entries to calculate median error")
-        return None, None, 0
-
-
 def calculate_detailed_statistics(gt_data, pred_data):
     """Calculate detailed statistics including min, max, std for both position and pitch errors"""
 
@@ -774,6 +684,33 @@ def calculate_filtered_statistics(gt_data, pred_data, outlier_range=[5, 95]):
 
     return stats
 
+def print_statistics(stats):
+    """Print formatted statistics"""
+    if not stats:
+        print("No statistics available")
+        return
+    
+    print(f"\nDetailed Statistics:")
+    print(f"  Total samples: {stats['count']}")
+    
+    print(f"\n  Position Error Statistics (meters, 2D):")
+    print(f"    Min:     {stats['position']['min']:.4f}")
+    print(f"    Max:     {stats['position']['max']:.4f}")
+    print(f"    Mean:    {stats['position']['mean']:.4f}")
+    print(f"    Median:  {stats['position']['median']:.4f}")
+    print(f"    Std:     {stats['position']['std']:.4f}")
+    print(f"    75th %:  {stats['position']['percentile_75']:.4f}")
+    print(f"    95th %:  {stats['position']['percentile_95']:.4f}")
+
+    print(f"\n  Orientation Error Statistics (degrees):")
+    print(f"    Min:     {stats['orientation']['min']:.2f}")
+    print(f"    Max:     {stats['orientation']['max']:.2f}")
+    print(f"    Mean:    {stats['orientation']['mean']:.2f}")
+    print(f"    Median:  {stats['orientation']['median']:.2f}")
+    print(f"    Std:     {stats['orientation']['std']:.2f}")
+    print(f"    75th %:  {stats['orientation']['percentile_75']:.2f}")
+    print(f"    95th %:  {stats['orientation']['percentile_95']:.2f}")
+
 
 def print_filtered_statistics(stats):
     """Print formatted filtered statistics"""
@@ -809,6 +746,73 @@ def print_filtered_statistics(stats):
     print(f"    95th %:  {stats['orientation']['percentile_95']:.2f}")
 
 
+def add_errors_to_csv(gt_data, pred_data, csv_path):
+    """
+    Add position and pitch error columns to the existing CSV file
+    
+    Args:
+        gt_data: Ground truth data
+        pred_data: Predicted data
+        csv_path: Path to the CSV file to update
+    """
+    # Calculate errors for each entry
+    updated_data = []
+    
+    for gt_entry, pred_entry in zip(gt_data, pred_data):
+        if gt_entry["index"] != pred_entry["index"]:
+            print(f"Index mismatch: {gt_entry['index']} vs {pred_entry['index']}")
+            continue
+        
+        # Calculate position error (2D: x, y only)
+        pos_error = (
+            (gt_entry["pos_x"] - pred_entry["pos_x"]) ** 2
+            + (gt_entry["pos_y"] - pred_entry["pos_y"]) ** 2
+        ) ** 0.5
+        
+        # Calculate pitch error in degrees
+        gt_quat = [
+            gt_entry["quat_w"],
+            gt_entry["quat_x"],
+            gt_entry["quat_y"],
+            gt_entry["quat_z"],
+        ]
+        pred_quat = [
+            pred_entry["quat_w"],
+            pred_entry["quat_x"],
+            pred_entry["quat_y"],
+            pred_entry["quat_z"],
+        ]
+        pitch_err = pitch_error_degrees(gt_quat, pred_quat)
+        
+        # Create updated entry with error columns
+        updated_entry = pred_entry.copy()
+        updated_entry["pos_error"] = pos_error
+        updated_entry["pitch_error"] = pitch_err
+        
+        updated_data.append(updated_entry)
+    
+    # Write updated data back to CSV
+    if updated_data:
+        fieldnames = list(updated_data[0].keys())
+        
+        try:
+            with open(csv_path, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(updated_data)
+            
+            print(f"Successfully added error columns to {len(updated_data)} entries in: {csv_path}")
+            print(f"Added columns: 'pos_error' (meters), 'pitch_error' (degrees)")
+            return True
+        
+        except Exception as e:
+            print(f"Error updating CSV file: {e}")
+            return False
+    else:
+        print("No data to update")
+        return False
+
+
 def calculate_error():
     """Main function to calculate and display all error metrics"""
     gt_data = load_csv_simple(csv_gt)
@@ -818,106 +822,90 @@ def calculate_error():
         print("No data to compare")
         return
 
-    # Filter out leaders for analysis
-    gt_followers = filter_followers_only(gt_data)
-    pred_followers = filter_followers_only(pred_data)
-
-    print(f"Total GT entries: {len(gt_data)}, Follower entries: {len(gt_followers)}")
-    print(
-        f"Total Pred entries: {len(pred_data)}, Follower entries: {len(pred_followers)}"
-    )
-
-    # Count leaders that were skipped
-    leaders_count = len(gt_data) - len(gt_followers)
-    print(f"Skipped {leaders_count} leader entries from analysis")
-
-    # Calculate basic statistics (using original functions with leader filtering)
-    mean_pos_error, mean_rot_error, count_mean = calculate_mean_error(
-        gt_followers, pred_followers
-    )
-    median_pos_error, median_rot_error, count_median = calculate_median_error(
-        gt_followers, pred_followers
-    )
-
-    # Calculate detailed statistics
-    detailed_stats = calculate_detailed_statistics(gt_followers, pred_followers)
-
-    # Print results
-    print("\n" + "=" * 60)
-    print("POSITION AND ORIENTATION ERROR ANALYSIS (FOLLOWERS ONLY)")
-    print("=" * 60)
-
-    if detailed_stats:
-        print(f"\nDetailed Position Error Statistics (meters, 2D):")
-        print(f"  Min:     {detailed_stats['position']['min']:.4f}")
-        print(f"  Max:     {detailed_stats['position']['max']:.4f}")
-        print(f"  Mean:    {detailed_stats['position']['mean']:.4f}")
-        print(f"  Median:  {detailed_stats['position']['median']:.4f}")
-        print(f"  Std:     {detailed_stats['position']['std']:.4f}")
-        print(f"  75th %:  {detailed_stats['position']['percentile_75']:.4f}")
-        print(f"  95th %:  {detailed_stats['position']['percentile_95']:.4f}")
-
-        print(f"\nDetailed Orientation Error Statistics (degrees):")
-        print(f"  Min:     {detailed_stats['orientation']['min']:.2f}")
-        print(f"  Max:     {detailed_stats['orientation']['max']:.2f}")
-        print(f"  Mean:    {detailed_stats['orientation']['mean']:.2f}")
-        print(f"  Median:  {detailed_stats['orientation']['median']:.2f}")
-        print(f"  Std:     {detailed_stats['orientation']['std']:.2f}")
-        print(f"  75th %:  {detailed_stats['orientation']['percentile_75']:.2f}")
-        print(f"  95th %:  {detailed_stats['orientation']['percentile_95']:.2f}")
-
-    # Calculate and print filtered statistics
-    print("\n" + "=" * 60)
-    print("FILTERED ERROR ANALYSIS")
-    print("=" * 60)
+    # Add error columns to the CSV file first
+    print("Adding error columns to CSV file...")
+    success = add_errors_to_csv(gt_data, pred_data, csv_pred)
     
-    # Calculate filtered statistics for 5-95% range
-    filtered_stats_5_95 = calculate_filtered_statistics(gt_followers, pred_followers, [0, 95])
-    print_filtered_statistics(filtered_stats_5_95)
+    if success:
+        print(f"Error columns added to: {csv_pred}")
+    else:
+        print("Failed to add error columns to CSV")
     
-    # Calculate filtered statistics for 10-90% range  
-    filtered_stats_10_90 = calculate_filtered_statistics(gt_followers, pred_followers, [0, 90])
-    print_filtered_statistics(filtered_stats_10_90)
+    # # Continue with existing analysis...
+    # # Filter out leaders for analysis
+    # gt_followers = filter_followers_only(gt_data)
+    # pred_followers = filter_followers_only(pred_data)
+
+    # print(f"Total GT entries: {len(gt_data)}, Follower entries: {len(gt_followers)}")
+    # print(
+    #     f"Total Pred entries: {len(pred_data)}, Follower entries: {len(pred_followers)}"
+    # )
+
+    # # Count leaders that were skipped
+    # leaders_count = len(gt_data) - len(gt_followers)
+    # print(f"Skipped {leaders_count} leader entries from analysis")
+
+    # # Print results
+    # print("\n" + "=" * 60)
+    # print("POSITION AND ORIENTATION ERROR ANALYSIS (FOLLOWERS ONLY)")
+    # print("=" * 60)
+
+    # # Calculate detailed statistics
+    # detailed_stats = calculate_detailed_statistics(gt_followers, pred_followers)
+    # print_statistics(detailed_stats)
+
+    # # Calculate and print filtered statistics
+    # print("\n" + "=" * 60)
+    # print("FILTERED ERROR ANALYSIS")
+    # print("=" * 60)
     
-    print("=" * 60)
+    # # Calculate filtered statistics for 5-95% range
+    # filtered_stats_5_95 = calculate_filtered_statistics(gt_followers, pred_followers, [0, 95])
+    # print_filtered_statistics(filtered_stats_5_95)
+    
+    # # Calculate filtered statistics for 10-90% range  
+    # filtered_stats_10_90 = calculate_filtered_statistics(gt_followers, pred_followers, [0, 90])
+    # print_filtered_statistics(filtered_stats_10_90)
+    
+    # print("=" * 60)
 
-    # Draw histograms - both with and without outlier filtering
-    print("\nGenerating error histograms...")
+    # # Draw histograms - both with and without outlier filtering
+    # print("\nGenerating error histograms...")
 
-    # Standard histograms (with all data)
-    draw_error_histograms(gt_followers, pred_followers, "error_histograms.png")
-    draw_detailed_histograms(
-        gt_followers, pred_followers, "detailed_error_histograms.png"
-    )
+    # # Standard histograms (with all data)
+    # draw_error_histograms(gt_followers, pred_followers, "error_histograms.png")
+    # draw_detailed_histograms(
+    #     gt_followers, pred_followers, "detailed_error_histograms.png"
+    # )
 
-    # Filtered histograms (without extreme outliers)
-    print("\nGenerating filtered histograms (5th-95th percentile)...")
-    draw_error_histograms(
-        gt_followers,
-        pred_followers,
-        "error_histograms_filtered.png",
-        filter_outliers=True,
-        outlier_range=[0, 95],
-    )
-    draw_detailed_histograms(
-        gt_followers,
-        pred_followers,
-        "detailed_error_histograms_filtered.png",
-        percentiles=[75, 90, 95],
-        filter_outliers=True,
-        outlier_range=[0, 95],
-    )
+    # # Filtered histograms (without extreme outliers)
+    # print("\nGenerating filtered histograms (5th-95th percentile)...")
+    # draw_error_histograms(
+    #     gt_followers,
+    #     pred_followers,
+    #     "error_histograms_filtered.png",
+    #     filter_outliers=True,
+    #     outlier_range=[0, 95],
+    # )
+    # draw_detailed_histograms(
+    #     gt_followers,
+    #     pred_followers,
+    #     "detailed_error_histograms_filtered.png",
+    #     percentiles=[75, 90, 95],
+    #     filter_outliers=True,
+    #     outlier_range=[0, 95],
+    # )
 
-    # Very conservative filtering (10th-90th percentile)
-    print("\nGenerating conservative filtered histograms (10th-90th percentile)...")
-    draw_detailed_histograms(
-        gt_followers,
-        pred_followers,
-        "detailed_error_histograms_conservative.png",
-        percentiles=[75, 85, 90],
-        filter_outliers=True,
-        outlier_range=[0, 90],
-    )
+    # # Very conservative filtering (10th-90th percentile)
+    # print("\nGenerating conservative filtered histograms (10th-90th percentile)...")
+    # draw_detailed_histograms(
+    #     gt_followers,
+    #     pred_followers,
+    #     "detailed_error_histograms_conservative.png",
+    #     percentiles=[75, 85, 90],
+    #     filter_outliers=True,
+    #     outlier_range=[0, 90],
+    # )
 
 
 if __name__ == "__main__":
